@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Crypto Market Structure Scanner</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0a0e17;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #e4e4e7;
+    padding: 24px;
+    min-height: 100vh;
+  }
+  .container {
+    max-width: 1300px;
+    margin: 0 auto;
+    background: #141927;
+    border-radius: 16px;
+    padding: 32px;
+    border: 1px solid #1f2433;
+  }
+  .top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 28px;
+  }
+  .title-block h1 {
+    font-size: 26px;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .title-block .subtitle {
+    font-size: 12px;
+    color: #6b7280;
+    letter-spacing: 0.5px;
+  }
+  .header-right { text-align: right; }
+  .status-badge {
+    display: inline-block;
+    background: rgba(251, 191, 36, 0.1);
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.4);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+  .composite-score {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #6b7280;
+  }
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 14px;
+    margin-top: 8px;
+  }
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  .kpi-card {
+    background: #0f1420;
+    border-radius: 12px;
+    padding: 18px 20px;
+    border: 1px solid #1f2433;
+  }
+  .kpi-card.green-glow { box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.2); }
+  .kpi-card.amber-glow { box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.2); }
+  .kpi-card.red-glow { box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.2); }
+  .kpi-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+  .kpi-value {
+    font-size: 38px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .val-green { color: #22c55e; }
+  .val-amber { color: #fbbf24; }
+  .val-red { color: #ef4444; }
+  .val-purple { color: #a855f7; }
+  .val-blue { color: #3b82f6; }
+  .kpi-bias {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+  }
+  .bias-bull { color: #22c55e; }
+  .bias-bear { color: #ef4444; }
+  .bias-neutral { color: #fbbf24; }
+  .mini-gauge {
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #ef4444 0%, #f59e0b 33%, #eab308 50%, #84cc16 66%, #22c55e 100%);
+    position: relative;
+    margin-bottom: 6px;
+  }
+  .mini-dot {
+    position: absolute;
+    top: -3px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 2px solid #0f1420;
+    transform: translateX(-50%);
+  }
+  .gauge-scale {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    color: #4b5563;
+  }
+  .kpi-notes {
+    font-size: 11px;
+    color: #6b7280;
+    margin-top: 12px;
+    line-height: 1.5;
+  }
+  .mss-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  .mss-card {
+    background: #0f1420;
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid #1f2433;
+  }
+  .mss-card.eth { border-color: rgba(98, 126, 234, 0.3); }
+  .mss-card.btc { border-color: rgba(247, 147, 26, 0.3); }
+  .mss-card.sol { border-color: rgba(168, 85, 247, 0.3); }
+  .mss-tag {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    background: rgba(98, 126, 234, 0.15);
+    color: #93b4ff;
+  }
+  .mss-tag.btc-tag { background: rgba(247, 147, 26, 0.15); color: #f7931a; }
+  .mss-tag.sol-tag { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
+  .mss-value {
+    font-size: 48px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .mss-bias {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 14px;
+  }
+  .mss-notes {
+    font-size: 11px;
+    color: #6b7280;
+    margin-top: 14px;
+    line-height: 1.5;
+  }
+  .composite-section { margin-bottom: 28px; }
+  .composite-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .composite-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #ffffff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .composite-readout {
+    font-size: 13px;
+    color: #fbbf24;
+    font-weight: 600;
+  }
+  .composite-bar {
+    height: 10px;
+    border-radius: 5px;
+    background: linear-gradient(90deg, #ef4444 0%, #f59e0b 25%, #eab308 50%, #84cc16 75%, #22c55e 100%);
+    position: relative;
+    margin-bottom: 8px;
+  }
+  .composite-dot {
+    position: absolute;
+    top: -6px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 3px solid #0a0e17;
+    transform: translateX(-50%);
+    box-shadow: 0 0 12px rgba(255,255,255,0.4);
+  }
+  .composite-scale {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: #6b7280;
+    text-transform: uppercase;
+  }
+  .signals-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  .signals-card {
+    background: #0f1420;
+    border-radius: 12px;
+    padding: 18px 22px;
+    border: 1px solid #1f2433;
+  }
+  .signals-card.bullish { border-color: rgba(34, 197, 94, 0.3); }
+  .signals-card.bearish { border-color: rgba(239, 68, 68, 0.3); }
+  .signals-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 14px;
+  }
+  .bullish .signals-title { color: #22c55e; }
+  .bearish .signals-title { color: #ef4444; }
+  .signal-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: #c8ccd8;
+    padding: 6px 0;
+  }
+  .signal-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot-green { background: #22c55e; }
+  .dot-amber { background: #fbbf24; }
+  .dot-red { background: #ef4444; }
+  .altcoins-card {
+    background: #0f1420;
+    border-radius: 12px;
+    padding: 22px;
+    border: 1px solid #1f2433;
+    margin-bottom: 24px;
+  }
+  .altcoins-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+  }
+  .altcoins-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .live-badge {
+    background: #fbbf24;
+    color: #0a0e17;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 5px 12px;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+  }
+  .alt-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .alt-table th {
+    text-align: left;
+    font-size: 10px;
+    font-weight: 700;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #1f2433;
+  }
+  .alt-table th.right { text-align: right; }
+  .alt-table td {
+    padding: 14px 12px;
+    border-bottom: 1px solid #1a1f2e;
+    font-size: 14px;
+    color: #e4e4e7;
+  }
+  .alt-table tr:last-child td { border-bottom: none; }
+  .alt-table td.right { text-align: right; }
+  .rank-circle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #1e3a5f;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .coin-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .coin-icon-sm {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: #ffffff;
+    flex-shrink: 0;
+  }
+  .ic-eth { background: #627eea; }
+  .ic-bnb { background: #f3ba2f; color: #0a0e17; }
+  .ic-xrp { background: #1a2030; border: 1px solid #2a3348; }
+  .ic-ada { background: #0033ad; }
+  .ic-sol { background: linear-gradient(135deg, #9945ff, #14f195); }
+  .coin-name-bold {
+    font-weight: 700;
+    color: #ffffff;
+  }
+  .pair-text { color: #8b92a5; font-size: 13px; }
+  .price-text { color: #c8ccd8; font-family: "Courier New", monospace; font-size: 13px; }
+  .score-pill {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    min-width: 56px;
+    text-align: center;
+  }
+  .pill-bull { background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.3); }
+  .pill-strong-bull { background: rgba(34, 197, 94, 0.25); color: #15803d; border: 1px solid rgba(34, 197, 94, 0.5); }
+  .pill-neutral { background: rgba(107, 114, 128, 0.15); color: #9ca3af; border: 1px solid rgba(107, 114, 128, 0.3); }
+  .pill-bear { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+  .pill-strong-bear { background: rgba(239, 68, 68, 0.25); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.5); }
+  .composite-num { font-weight: 800; font-size: 14px; }
+  .num-bull { color: #22c55e; }
+  .num-neutral { color: #9ca3af; }
+  .num-bear { color: #ef4444; }
+  /* STAR RATINGS */
+  .stars { display: inline-flex; gap: 2px; font-size: 14px; letter-spacing: 1px; }
+  .stars .on { color: #fbbf24; }
+  .stars .off { color: #2a3348; }
+  .stars-g .on { color: #22c55e; }
+  .stars-r .on { color: #ef4444; }
+  .footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 16px;
+    border-top: 1px solid #1f2433;
+  }
+  .footer-note {
+    font-size: 11px;
+    color: #4b5563;
+  }
+  .footer-pills {
+    display: flex;
+    gap: 8px;
+  }
+  .footer-pill {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .pill-recovery { background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.3); }
+  .pill-no-season { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+  @media (max-width: 1000px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .mss-grid { grid-template-columns: 1fr; }
+    .signals-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- HEADER -->
+    <div class="top-bar">
+      <div class="title-block">
+        <h1>Crypto Market Structure Scanner</h1>
+        <div class="subtitle">TOTAL · OTHERS.D · ETH · BTC · SOL · Daily Timeframe · Apr 22, 2026</div>
+      </div>
+      <div class="header-right">
+        <div class="status-badge">⚠ TRANSITIONING</div>
+        <div class="composite-score">Composite Score: −0.285</div>
+      </div>
+    </div>
+
+    <!-- MARKET STRUCTURE PANELS -->
+    <div class="section-label">▤ Market Structure Panels</div>
+    <div class="kpi-grid">
+
+      <!-- LT TOTAL -->
+      <div class="kpi-card green-glow">
+        <div class="kpi-label">LT Total</div>
+        <div class="kpi-value val-red">-0.41</div>
+        <div class="kpi-bias bias-bear">BEARISH ▲</div>
+        <div class="mini-gauge"><div class="mini-dot" style="left: 100%;"></div></div>
+        <div class="gauge-scale"><span>-1</span><span>0</span><span>+1</span></div>
+        <div class="kpi-notes">Rows 1+2 green (2/5)<br>Oscillator: -64 extreme OS</div>
+      </div>
+
+      <!-- MT TOTAL -->
+      <div class="kpi-card amber-glow">
+        <div class="kpi-label">MT Total</div>
+        <div class="kpi-value val-amber">+0.23</div>
+        <div class="kpi-bias bias-bull">BULLISH ▲</div>
+        <div class="mini-gauge"><div class="mini-dot" style="left: 61.5%;"></div></div>
+        <div class="gauge-scale"><span>-1</span><span>0</span><span>+1</span></div>
+        <div class="kpi-notes">JSI + Two Poles: red<br>OBV + Race CD: turning green</div>
+      </div>
+
+      <!-- LT OTHER -->
+      <div class="kpi-card red-glow">
+        <div class="kpi-label">LT Other</div>
+        <div class="kpi-value val-amber">+0.7</div>
+        <div class="kpi-bias bias-bull">BULLISH ▲</div>
+        <div class="mini-gauge"><div class="mini-dot" style="left: 85%;"></div></div>
+        <div class="gauge-scale"><span>-1</span><span>0</span><span>+1</span></div>
+        <div class="kpi-notes">Hull MA 135: all red<br>0/6 altseason conditions met</div>
+      </div>
+
+      <!-- MT OTHER -->
+      <div class="kpi-card red-glow">
+        <div class="kpi-label">MT Other</div>
+        <div class="kpi-value val-red">-0.52</div>
+        <div class="kpi-bias bias-bear">BEARISH ▲</div>
+        <div class="mini-gauge"><div class="mini-dot" style="left: 85%;"></div></div>
+        <div class="gauge-scale"><span>-1</span><span>0</span><span>+1</span></div>
+        <div class="kpi-notes">Adaptive Flow: all red<br>Smart Money: micro green only</div>
+      </div>
+
+    </div>
+
+    <!-- COIN MSS PANELS -->
+    <div class="section-label">○ Coin MSS Panels</div>
+    <div class="mss-grid">
+
+      <!-- ETH -->
+      <div class="mss-card eth">
+        <span class="mss-tag">◆ ETH MSS</span>
+        <div class="mss-value val-blue">-1.00</div>
+        <div class="mss-bias bias-bear">BEARISH →</div>
+        <div class="mini-gauge"><div class="mini-dot" style="left: 50%; background: #3b82f6;"></div></div>
+        <div class="gauge-scale"><span>-1</span><span>0</span><span>+1</span></div>
+        <div class="mss-notes">Update after scoring<br>ETH daily chart</div>
+      </div>
+
+      <!-- BTC -->
+      <div class="mss-card btc">
+        <span class="mss-tag btc-tag">₿ BTC MSS</span>
+        <div class="mss-value val-amber">1.00</div>
+        <div class="mss-bias bias-bull">BULLISH →</div>
+        <div class="mini-gauge"><div class="mini-dot" style="left: 50%; background: #f7931a;"></div></div>
+        <div class="gauge-scale"><span>-1</span><span>0</span><span>+1</span></div>
+        <div class="mss-notes">Update after scoring<br>BTC daily chart</div>
+      </div>
+
+      <!-- SOL -->
+      <div class="mss-card sol">
+        <span class="mss-tag sol-tag">◎ SOL MSS</span>
+        <div class="mss-value val-purple">0.00</div>
+        <div class="mss-bias bias-bear">BEARISH →</div>
+        <div class="mini-gauge"><div class="mini-dot" style="left: 50%; background: #a855f7;"></div></div>
+        <div class="gauge-scale"><span>-1</span><span>0</span><span>+1</span></div>
+        <div class="mss-notes">Update after scoring<br>SOL daily chart</div>
+      </div>
+
+    </div>
+
+    <!-- COMPOSITE SCORE METER -->
+    <div class="composite-section">
+      <div class="composite-header">
+        <div class="composite-title">Composite Score Meter</div>
+        <div class="composite-readout">−0.285 · Caution Zone</div>
+      </div>
+      <div class="composite-bar">
+        <div class="composite-dot" style="left: 35.75%;"></div>
+      </div>
+      <div class="composite-scale">
+        <span>FULL BEAR -1</span>
+        <span>CAUTION -0.5</span>
+        <span>NEUTRAL 0</span>
+        <span>EARLY BULL +0.5</span>
+        <span>FULL BULL +1</span>
+      </div>
+    </div>
+
+    <!-- SIGNALS GRID -->
+    <div class="signals-grid">
+
+      <div class="signals-card bullish">
+        <div class="signals-title">✓ Bullish Signals Active</div>
+        <div class="signal-item"><span class="signal-dot dot-green"></span>Oscillator at -64 (historic extreme OS)</div>
+        <div class="signal-item"><span class="signal-dot dot-green"></span>TOTAL Structure Rows 1 + 2 green</div>
+        <div class="signal-item"><span class="signal-dot dot-green"></span>OBV Oscillator turning positive</div>
+        <div class="signal-item"><span class="signal-dot dot-green"></span>Race CD momentum flipping green</div>
+        <div class="signal-item"><span class="signal-dot dot-amber"></span>OTHERS Smart Money: first micro-green</div>
+      </div>
+
+      <div class="signals-card bearish">
+        <div class="signals-title">✕ Bearish Signals Active</div>
+        <div class="signal-item"><span class="signal-dot dot-red"></span>JSI Trend Navigator: red dominant</div>
+        <div class="signal-item"><span class="signal-dot dot-red"></span>Hull MA 135 all red (OTHERS)</div>
+        <div class="signal-item"><span class="signal-dot dot-red"></span>GC Death Cross still active</div>
+        <div class="signal-item"><span class="signal-dot dot-red"></span>TOTAL Structure Rows 4 + 5 red</div>
+        <div class="signal-item"><span class="signal-dot dot-red"></span>0 / 6 altseason conditions met</div>
+      </div>
+
+    </div>
+
+    <!-- STRONGEST ALTCOINS -->
+    <div class="altcoins-card">
+      <div class="altcoins-header">
+        <div class="altcoins-title">🏆 Strongest Altcoins</div>
+        <div class="live-badge">LIVE RANKINGS</div>
+      </div>
+
+      <table class="alt-table">
+        <thead>
+          <tr>
+            <th style="width: 40px;">#</th>
+            <th>Coin</th>
+            <th>Pair</th>
+            <th class="right">Price</th>
+            <th class="right">MSS Score</th>
+            <th class="right">Token/other1D</th>
+            <th class="right">Regim</th>
+            <th class="right">Rating</th>
+            <th class="right">Bias</th>
+          </tr>
+        </thead>
+        <tbody>
+
+          <!-- RANK 1: BIO -->
+          <tr>
+            <td><span class="rank-circle">1</span></td>
+            <td>
+              <div class="coin-row">
+                <div class="coin-icon-sm ic-BIO"></div>
+                <span class="coin-name-bold">BIO</span>
+              </div>
+            </td>
+            <td class="pair-text">BIO/BTC</td>
+            <td class="right price-text">0.048$</td>
+            <td class="right"><span class="score-pill pill-bull">+0.20</span></td>
+            <td class="right"><span class="score-pill pill-bull">+0.35</span></td>
+            <td class="right composite-num num-bull">Trending</td>
+            <td class="right">
+              <span class="stars">
+                <span class="on">&#9733;</span>
+                <span class="on">&#9733;</span>
+                <span class="on">&#9733;</span>
+                <span class="on">&#9733;</span>
+                <span class="off">&#9733;</span>
+              </span>
+            </td>
+            <td class="right"><span class="score-pill pill-bull">Bull</span></td>
+          </tr>
+
+          <!-- RANK 2: Link -->
+          <tr>
+            <td><span class="rank-circle">2</span></td>
+            <td>
+              <div class="coin-row">
+                <div class="coin-icon-sm ic-LINK">◆</div>
+                <span class="coin-name-bold">LINK</span>
+              </div>
+            </td>
+            <td class="pair-text">Link/BTC</td>
+            <td class="right price-text">9.1$</td>
+            <td class="right"><span class="score-pill pill-neutral">0.00</span></td>
+            <td class="right"><span class="score-pill pill-bull">+0.15</span></td>
+            <td class="right composite-num num-bull">-26%</td>
+            <td class="right">
+              <span class="stars stars-r">
+                <span class="on">&#9733;</span>
+                <span class="on">&#9733;</span>
+                <span class="off">&#9733;</span>
+                <span class="off">&#9733;</span>
+                <span class="off">&#9733;</span>
+              </span>
+            </td>
+            <td class="right"><span class="score-pill pill-neutral">Neutral</span></td>
+          </tr>
+
+          <!-- RANK 3: UNI -->
+          <tr>
+            <td><span class="rank-circle">3</span></td>
+            <td>
+              <div class="coin-row">
+                <div class="coin-icon-sm ic-UNI">✕</div>
+                <span class="coin-name-bold">UNI</span>
+              </div>
+            </td>
+            <td class="pair-text">Uni/BTC</td>
+            <td class="right price-text">3.2$</td>
+            <td class="right"><span class="score-pill pill-bear">-0.20</span></td>
+            <td class="right"><span class="score-pill pill-neutral">+0.05</span></td>
+            <td class="right composite-num num-neutral">-%7</td>
+            <td class="right">
+              <span class="stars">
+                <span class="on">&#9733;</span>
+                <span class="on">&#9733;</span>
+                <span class="on">&#9733;</span>
+                <span class="off">&#9733;</span>
+                <span class="off">&#9733;</span>
+              </span>
+            </td>
+            <td class="right"><span class="score-pill pill-neutral">+Neutral</span></td>
+          </tr>
+
+          <!-- RANK 4: TAO -->
+          <tr>
+            <td><span class="rank-circle">4</span></td>
+            <td>
+              <div class="coin-row">
+                <div class="coin-icon-sm ic-TAO">₳</div>
+                <span class="coin-name-bold">TAO</span>
+              </div>
+            </td>
+            <td class="pair-text">TAO/BTC</td>
+            <td class="right price-text">261$</td>
+            <td class="right"><span class="score-pill pill-bear">-0.45</span></td>
+            <td class="right"><span class="score-pill pill-bear">-0.25</span></td>
+            <td class="right composite-num num-bear">-0.35</td>
+            <td class="right">
+              <span class="stars stars-r">
+                <span class="on">&#9733;</span>
+                <span class="on">&#9733;</span>
+                <span class="off">&#9733;</span>
+                <span class="off">&#9733;</span>
+                <span class="off">&#9733;</span>
+              </span>
+            </td>
+            <td class="right"><span class="score-pill pill-neutral">Neutral</span></td>
+          </tr>
+
+          <!-- RANK 5: JUP -->
+          <tr>
+            <td><span class="rank-circle">5</span></td>
+            <td>
+              <div class="coin-row">
+                <div class="coin-icon-sm ic-JUP">◎</div>
+                <span class="coin-name-bold">Jup</span>
+              </div>
+            </td>
+            <td class="pair-text">JUP/BTC</td>
+            <td class="right price-text">0.18$</td>
+            <td class="right"><span class="score-pill pill-bear">-0.80</span></td>
+            <td class="right"><span class="score-pill pill-bear">-0.62</span></td>
+            <td class="right composite-num num-bear">-0.71</td>
+            <td class="right">
+              <span class="stars stars-r">
+                <span class="on">&#9733;</span>
+                <span class="off">&#9733;</span>
+                <span class="off">&#9733;</span>
+                <span class="off">&#9733;</span>
+                <span class="off">&#9733;</span>
+              </span>
+            </td>
+            <td class="right"><span class="score-pill pill-bear">Bear</span></td>
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+      <div class="footer-note">LT = Long-term · MT = Medium-term · Source: TradingView analysis</div>
+      <div class="footer-pills">
+        <div class="footer-pill pill-recovery">LT: Early Recovery</div>
+        <div class="footer-pill pill-no-season">Alts: No Season Yet</div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>
